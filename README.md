@@ -46,11 +46,25 @@ This will install all required packages (Express, MySQL, CORS, etc.)
 
 ### Step 3: Setup the Database
 
+**Option A: Using PowerShell (Command Line)**
+
 Run this command to create the database and tables with sample data:
 
 ```powershell
 Get-Content db_setup.sql | & "C:\xampp\mysql\bin\mysql.exe" -u root
 ```
+
+**Option B: Using MySQL Workbench (GUI)**
+
+1. Open **MySQL Workbench**
+2. Click on your local MySQL connection (usually `Local instance 3306`)
+3. If prompted for password, leave it blank and click OK
+4. In the menu, go to **File → Open SQL Script**
+5. Browse and select `db_setup.sql` from your project folder
+6. Click the **⚡ Execute** button (lightning icon) or press `Ctrl+Shift+Enter`
+7. Wait for the script to complete (you'll see "Action Output" at the bottom)
+8. Refresh the Schemas panel (right-click → Refresh All)
+9. You should see `intelligent_sales` database with all tables
 
 ✅ This will:
 - Create `intelligent_sales` database
@@ -67,7 +81,11 @@ The database connection is already configured in `db.js`:
 - **Database:** intelligent_sales
 - **Port:** 3306
 
-**If you have a different MySQL password**, edit `db.js` and change the password field.
+**If you have a different MySQL password or using MySQL Workbench with password:**
+1. Open `db.js` file
+2. Find the line: `password: "",`
+3. Change it to: `password: "your_password_here",`
+4. Save the file
 
 ---
 
@@ -235,11 +253,17 @@ DBMS_Project/
 
 ### ❌ Problem: "Unknown database 'intelligent_sales'"
 
-**Solution:**
-Run the database setup again:
+**Solution (PowerShell):**
 ```powershell
 Get-Content db_setup.sql | & "C:\xampp\mysql\bin\mysql.exe" -u root
 ```
+
+**Solution (MySQL Workbench):**
+1. Open MySQL Workbench
+2. Connect to your local instance
+3. File → Open SQL Script → Select `db_setup.sql`
+4. Click Execute (⚡) button
+5. Refresh the Schemas panel
 
 ### ❌ Problem: "Port 3000 is already in use"
 
@@ -265,10 +289,18 @@ npm install
 
 **Solution:**
 1. Check MySQL is connected: Look for "DB CONNECTED" in terminal
-2. Verify database exists:
+2. **Verify database exists:**
+   
+   **PowerShell:**
    ```powershell
    & "C:\xampp\mysql\bin\mysql.exe" -u root -e "SHOW DATABASES LIKE 'intelligent_sales';"
    ```
+   
+   **MySQL Workbench:**
+   - Open MySQL Workbench
+   - Run query: `SHOW DATABASES LIKE 'intelligent_sales';`
+   - If empty, run the `db_setup.sql` script again
+
 3. Restart the server
 
 ---
