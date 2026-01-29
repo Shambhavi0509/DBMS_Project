@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Customer Login • Intelligent Sales System</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+
+<body>
+  <header class="topbar">
+    <div class="container">
+      <div class="brand">
+        <div class="brand-title">Customer Login</div>
+        <div class="brand-subtitle">
+          Sign up or login to start shopping (no password)
+        </div>
+      </div>
+      <nav class="nav">
+        <a class="nav-link" href="/">Home</a>
+        <a class="nav-link active" href="/customer_login.html">Customer Login</a>
+        <a class="nav-link" href="/salesperson_login.html">Sales Person Login</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="container">
+    <section class="card">
+      <h2>Sign up / Login</h2>
+      <p class="muted">
+        <b>DBMS Note:</b> Academic project — identity by name, email, and phone only.
+      </p>
+
+      <div class="tabs-inline">
+        <button class="tab-btn active" data-tab="login">Login</button>
+        <button class="tab-btn" data-tab="signup">Sign up</button>
+      </div>
+
+      <!-- LOGIN -->
+      <form id="loginForm" class="auth-form">
+        <div class="form-grid">
+          <label class="field">
+            <span>Email</span>
+            <input id="loginEmail" class="input" type="email" />
+          </label>
+          <label class="field">
+            <span>Phone</span>
+            <input id="loginPhone" class="input" type="tel" />
+          </label>
+        </div>
+        <button class="btn" type="submit">Login</button>
+      </form>
+
+      <!-- SIGNUP -->
+      <form id="signupForm" class="auth-form" style="display:none;">
+        <div class="form-grid">
+          <label class="field">
+            <span>Full Name *</span>
+            <input id="signupName" class="input" required minlength="2" />
+          </label>
+          <label class="field">
+            <span>Phone *</span>
+            <input id="signupPhone" class="input" required minlength="10" />
+          </label>
+          <label class="field" style="grid-column: span 2;">
+            <span>Email *</span>
+            <input id="signupEmail" class="input" type="email" required />
+          </label>
+        </div>
+        <button class="btn" type="submit">Sign up</button>
+      </form>
+
+      <div id="msg" class="msg"></div>
+    </section>
+  </main>
+
+  <script>
+    const $ = (id) => document.getElementById(id);
+
+    function setMsg(type, text) {
+      const el = $("msg");
+      el.className = "msg " + type;
+      el.innerHTML = text;
+    }
+
+    // TAB SWITCH
+    document.querySelectorAll(".tab-btn").forEach((btn) => {
+      btn.onclick = () => {
+        document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
+        btn.classList.add("active");
+        $("loginForm").style.display = btn.dataset.tab === "login" ? "block" : "none";
+        $("signupForm").style.display = btn.dataset.tab === "signup" ? "block" : "none";
+        setMsg("", "");
+      };
+    });
+
+    // ---------------- LOGIN ----------------
+    $("loginForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+
+      const email = $("loginEmail").value.trim().toLowerCase();
+      const phone = $("loginPhone").value.trim();
+
+      if (!email && !phone) {
+        setMsg("bad", "Enter email or phone");
+        return;
+      }
+
+      try {
+        const res = await fetch("/api/customer/login", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email: email || null, phone: phone || null }),
+        });
+
+        const text = await res.text();   // ✅ SAFE FIX
+        console.log("LOGIN RESPONSE:", text);
+
+        let data;
+        try {
+          data = JSON.parse(text);
+        } catch {
+          throw new Error("Server returned HTML instead of JSON");
+        }
+
+        if (!res.ok) throw new Error(data.error || "Login failed");
+
+        sessionStorage.setItem("customer", JSON.stringify(data.customer));
+        setMsg("ok", `Welcome ${data.customer.name}!<br>
+          <a class="btn" href="/customer_dashboard.html">Go to Dashboard →</a>`);
+
+      } catch (err) {
+        setMsg("bad", err.message);
+      }
+    });
+
+    // ---------------- SIGNUP ----------------
+    $("signupForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+
+      try {
+        const res = await fetch("/api/customer/signup", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            name: $("signupName").value.trim(),
+            email: $("signupEmail").value.trim().toLowerCase(),
+            phone: $("signupPhone").value.trim(),
+          }),
+        });
+
+        const text = await res.text();   // ✅ SAFE FIX
+        console.log("SIGNUP RESPONSE:", text);
+
+        let data;
+        try {
+          data = JSON.parse(text);
+        } catch {
+          throw new Error("Server returned HTML instead of JSON");
+        }
+
+        if (!res.ok) throw new Error(data.error || "Signup failed");
+
+        sessionStorage.setItem("customer", JSON.stringify(data.customer));
+        setMsg("ok", `Account created!<br>
+          <a class="btn" href="/customer_dashboard.html">Go to Dashboard →</a>`);
+
+      } catch (err) {
+        setMsg("bad", err.message);
+      }
+    });
+  </script>
+</body>
+</html>

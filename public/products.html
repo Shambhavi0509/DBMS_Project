@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Products • Intelligent Sales System</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="container">
+        <div class="brand">
+          <div class="brand-title">Products</div>
+          <div class="brand-subtitle">All products (master table)</div>
+        </div>
+        <nav class="nav">
+          <a class="nav-link" href="/">Home</a>
+          <a class="nav-link active" href="/products.html">Products</a>
+          <a class="nav-link" href="/sale.html">Make Sale</a>
+          <a class="nav-link" href="/reports.html">Reports</a>
+        </nav>
+      </div>
+    </header>
+
+    <main class="container">
+      <section class="card">
+        <h2>Product List</h2>
+        <p class="muted">
+          DBMS note: <code>Product</code> is a master table (3NF). Stock is updated by stored procedure and trigger.
+        </p>
+        <div class="row">
+          <input id="filter" class="input" placeholder="Filter by name/category..." />
+          <button id="reload" class="btn">Reload</button>
+        </div>
+
+        <div class="table-wrap">
+          <table class="table" id="productsTable">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Name</th>
+                <th>Category</th>
+                <th>Price</th>
+                <th>Stock</th>
+                <th>Description</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+        <div id="meta" class="muted"></div>
+      </section>
+    </main>
+
+    <script>
+      const $ = (id) => document.getElementById(id);
+      let all = [];
+
+      function escapeHtml(str) {
+        return String(str)
+          .replaceAll("&", "&amp;")
+          .replaceAll("<", "&lt;")
+          .replaceAll(">", "&gt;")
+          .replaceAll('"', "&quot;")
+          .replaceAll("'", "&#039;");
+      }
+
+      function render(rows) {
+        const tbody = $("productsTable").querySelector("tbody");
+        tbody.innerHTML = rows
+          .map(
+            (p) => `
+          <tr>
+            <td>${p.product_id}</td>
+            <td>${escapeHtml(p.name)}</td>
+            <td>${escapeHtml(p.category)}</td>
+            <td>₹${Number(p.price).toFixed(2)}</td>
+            <td class="${Number(p.stock) > 0 ? "ok" : "bad"}">${p.stock}</td>
+            <td>${escapeHtml(p.description || "")}</td>
+          </tr>
+        `
+          )
+          .join("");
+        $("meta").textContent = `Total products: ${rows.length}`;
+      }
+
+      async function load() {
+        $("meta").textContent = "Loading...";
+        console.log("Fetching /api/products...");
+        const res = await fetch("/api/products");
+        all = await res.json();
+        console.log("Products received:", all.length);
+        applyFilter();
+      }
+
+      function applyFilter() {
+        const q = $("filter").value.trim().toLowerCase();
+        if (!q) return render(all);
+        const rows = all.filter((p) => {
+          const text = `${p.name} ${p.category} ${p.description || ""}`.toLowerCase();
+          return text.includes(q);
+        });
+        render(rows);
+      }
+
+      $("filter").addEventListener("input", applyFilter);
+      $("reload").addEventListener("click", load);
+
+      load();
+    </script>
+  </body>
+</html>
+

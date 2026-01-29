@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Customer Dashboard • Intelligent Sales System</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="container">
+      <div class="brand">
+        <div class="brand-title">Customer Dashboard</div>
+        <div class="brand-subtitle" id="welcomeMsg">Welcome!</div>
+      </div>
+      <nav class="nav">
+        <a class="nav-link" href="/">Home</a>
+        <a class="nav-link active" href="/customer_dashboard.html">My Dashboard</a>
+        <a class="nav-link" href="#" onclick="logout()">Logout</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="container">
+    <!-- Search Section -->
+    <section class="card">
+      <h2>Search Products</h2>
+      <p class="muted">
+        <b>DBMS Note:</b> SQL-based semantic search using LIKE and relevance scoring.
+      </p>
+      <div class="row">
+        <input id="searchInput" class="input" placeholder="Search: affordable phone, laptop for students...">
+        <button id="searchBtn" class="btn">Search</button>
+        <button id="clearSearchBtn" class="btn btn-secondary">Clear</button>
+      </div>
+      <div id="searchMeta" class="muted" style="margin-top:8px;"></div>
+      <div id="searchResults" class="grid"></div>
+    </section>
+
+    <!-- All Products Section -->
+    <section class="card">
+      <h2>All Products</h2>
+      <p class="muted">Click "Buy" to purchase a product. Stock is updated automatically via stored procedure + trigger.</p>
+      <div id="productsList" class="grid"></div>
+    </section>
+
+    <!-- My Orders Section -->
+    <section class="card">
+      <h2>My Orders</h2>
+      <p class="muted">
+        <b>DBMS Note:</b> Uses JOINs (Sale → Sale_Item → Product) to fetch order history.
+      </p>
+      <div id="ordersList"></div>
+    </section>
+  </main>
+
+  <!-- Buy Modal -->
+  <div id="buyModal" class="modal" style="display:none;">
+    <div class="modal-content card">
+      <h2>Complete Purchase</h2>
+      <div id="modalProductInfo"></div>
+      <form id="buyForm" class="form" style="margin-top:12px;">
+        <div class="form-grid">
+          <label class="field">
+            <span>Quantity</span>
+            <input id="buyQty" class="input" type="number" min="1" value="1" required>
+          </label>
+          <label class="field">
+            <span>Payment Mode</span>
+            <select id="buyMode" class="input">
+              <option value="CASH">CASH</option>
+              <option value="UPI">UPI</option>
+              <option value="CARD">CARD</option>
+            </select>
+          </label>
+        </div>
+        <input type="hidden" id="buyProductId">
+        <div id="buyTotal" class="muted" style="margin:12px 0; font-size:16px;"></div>
+        <div class="row">
+          <button class="btn" type="submit">Confirm Purchase</button>
+          <button class="btn btn-secondary" type="button" onclick="closeModal()">Cancel</button>
+        </div>
+      </form>
+      <div id="buyMsg" class="msg" style="margin-top:12px;"></div>
+    </div>
+  </div>
+
+  <style>
+    .modal {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0,0,0,0.7);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+    }
+    .modal-content {
+      max-width: 450px;
+      width: 90%;
+    }
+    .order-card {
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 12px;
+      margin-bottom: 12px;
+      background: rgba(10, 16, 33, 0.35);
+    }
+    .order-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+    .order-items {
+      font-size: 13px;
+      color: var(--muted);
+    }
+    .buy-btn {
+      background: rgba(34, 197, 94, 0.2);
+      border-color: rgba(34, 197, 94, 0.5);
+      color: #22c55e;
+      padding: 6px 12px;
+      font-size: 12px;
+      margin-top: 8px;
+    }
+    .buy-btn:hover {
+      background: rgba(34, 197, 94, 0.3);
+    }
+    .no-data {
+      text-align: center;
+      padding: 24px;
+      color: var(--muted);
+    }
+  </style>
+
+  <script>
+    const $ = (id) => document.getElementById(id);
+    let customer = null;
+    let products = [];
+    let selectedProduct = null;
+
+    function escapeHtml(str) {
+      return String(str).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    }
+
+    function logout() {
+      sessionStorage.clear();
+      window.location.href = "/customer_login.html";
+    }
+
+    function checkLogin() {
+      const stored = sessionStorage.getItem("customer");
+      if (!stored) {
+        window.location.href = "/customer_login.html";
+        return false;
+      }
+      customer = JSON.parse(stored);
+      $("welcomeMsg").textContent = `Welcome, ${customer.name}!`;
+      return true;
+    }
+
+    function productCard(p, showBuy = true) {
+      const inStock = Number(p.stock) > 0;
+      const stockPill = inStock
+        ? `<div class="pill pill-ok">Stock: ${p.stock}</div>`
+        : `<div class="pill pill-bad">Out of stock</div>`;
+      const scoreHtml = p.relevance_score ? `<div class="pill">Score: ${p.relevance_score}</div>` : "";
+      const buyBtn = showBuy && inStock
+        ? `<button class="btn buy-btn" onclick="openBuyModal(${p.product_id})">Buy Now</button>`
+        : "";
+
+      return `
+        <div class="product-card">
+          <div class="product-head">
+            <div>
+              <div class="product-name">${escapeHtml(p.name)}</div>
+              <div class="product-meta">${escapeHtml(p.category)} • ₹${Number(p.price).toFixed(2)}</div>
+            </div>
+            <div class="pill-row">${scoreHtml}${stockPill}</div>
+          </div>
+          <div class="product-desc">${escapeHtml(p.description || "")}</div>
+          ${buyBtn}
+        </div>
+      `;
+    }
+
+    async function loadProducts() {
+      try {
+        const res = await fetch("/api/products");
+        products = await res.json();
+        $("productsList").innerHTML = products.length
+          ? products.map(p => productCard(p)).join("")
+          : '<div class="no-data">No products available</div>';
+      } catch (err) {
+        $("productsList").innerHTML = '<div class="no-data">Failed to load products</div>';
+      }
+    }
+
+    async function loadOrders() {
+      if (!customer) return;
+      try {
+        const res = await fetch(`/api/customer/${customer.customer_id}/orders`);
+        const orders = await res.json();
+        
+        if (orders.length === 0) {
+          $("ordersList").innerHTML = '<div class="no-data">No orders yet. Start shopping!</div>';
+          return;
+        }
+
+        $("ordersList").innerHTML = orders.map(order => `
+          <div class="order-card">
+            <div class="order-header">
+              <div>
+                <strong>Order #${order.sale_id}</strong>
+                <span class="muted" style="margin-left:8px;">${new Date(order.sale_date).toLocaleDateString()}</span>
+              </div>
+              <div>
+                <span class="pill pill-ok">₹${Number(order.total_amount).toFixed(2)}</span>
+                <span class="pill">${order.payment_mode}</span>
+              </div>
+            </div>
+            <div class="order-items">
+              ${order.items.map(item => `
+                <div>• ${escapeHtml(item.product_name)} × ${item.quantity} = ₹${Number(item.item_total).toFixed(2)}</div>
+              `).join("")}
+            </div>
+          </div>
+        `).join("");
+      } catch (err) {
+        $("ordersList").innerHTML = '<div class="no-data">Failed to load orders</div>';
+      }
+    }
+
+    async function runSearch() {
+      const q = $("searchInput").value.trim();
+      if (!q) {
+        $("searchMeta").textContent = "";
+        $("searchResults").innerHTML = "";
+        return;
+      }
+
+      $("searchMeta").textContent = "Searching...";
+      try {
+        const res = await fetch(`/api/search?q=${encodeURIComponent(q)}`);
+        const data = await res.json();
+        if (!res.ok) {
+          $("searchMeta").textContent = data.details || data.error || "Search failed";
+          $("searchResults").innerHTML = "";
+          return;
+        }
+        const results = Array.isArray(data) ? data : [];
+        $("searchMeta").textContent = `Found ${results.length} products`;
+        $("searchResults").innerHTML = results.length
+          ? results.map(p => productCard(p)).join("")
+          : '<div class="no-data">No matching products</div>';
+      } catch (err) {
+        console.error("Search error:", err);
+        $("searchMeta").textContent = "Search failed: " + (err.message || "Network error");
+        $("searchResults").innerHTML = "";
+      }
+    }
+
+    function openBuyModal(productId) {
+      selectedProduct = products.find(p => p.product_id === productId);
+      if (!selectedProduct) return;
+
+      $("buyProductId").value = productId;
+      $("buyQty").value = 1;
+      $("buyQty").max = selectedProduct.stock;
+      $("modalProductInfo").innerHTML = `
+        <div class="product-name">${escapeHtml(selectedProduct.name)}</div>
+        <div class="product-meta">${escapeHtml(selectedProduct.category)} • ₹${Number(selectedProduct.price).toFixed(2)} each</div>
+        <div class="muted" style="margin-top:4px;">Available: ${selectedProduct.stock} units</div>
+      `;
+      updateBuyTotal();
+      $("buyMsg").className = "msg";
+      $("buyMsg").textContent = "";
+      $("buyModal").style.display = "flex";
+    }
+
+    function closeModal() {
+      $("buyModal").style.display = "none";
+      selectedProduct = null;
+    }
+
+    function updateBuyTotal() {
+      if (!selectedProduct) return;
+      const qty = Number($("buyQty").value) || 1;
+      const total = qty * Number(selectedProduct.price);
+      $("buyTotal").innerHTML = `<strong>Total: ₹${total.toFixed(2)}</strong>`;
+    }
+
+    $("buyQty").addEventListener("input", updateBuyTotal);
+
+    $("buyForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      if (!customer || !selectedProduct) return;
+
+      const payload = {
+        customer_id: customer.customer_id,
+        product_id: selectedProduct.product_id,
+        quantity: Number($("buyQty").value),
+        payment_mode: $("buyMode").value,
+        salesperson_id: 0,
+      };
+
+      $("buyMsg").className = "msg";
+      $("buyMsg").textContent = "Processing...";
+
+      try {
+        const res = await fetch("/api/sale", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+        const data = await res.json();
+
+        if (!res.ok) throw new Error(data.details || data.error || "Purchase failed");
+
+        $("buyMsg").className = "msg ok";
+        $("buyMsg").innerHTML = `
+          Purchase successful!<br>
+          Order ID: ${data.sale_id} • Total: ₹${Number(data.total_amount).toFixed(2)}
+        `;
+
+        // Refresh data
+        setTimeout(() => {
+          closeModal();
+          loadProducts();
+          loadOrders();
+        }, 1500);
+
+      } catch (err) {
+        $("buyMsg").className = "msg bad";
+        $("buyMsg").textContent = err.message;
+      }
+    });
+
+    $("searchBtn").addEventListener("click", runSearch);
+    $("searchInput").addEventListener("keydown", (e) => {
+      if (e.key === "Enter") runSearch();
+    });
+    $("clearSearchBtn").addEventListener("click", () => {
+      $("searchInput").value = "";
+      $("searchMeta").textContent = "";
+      $("searchResults").innerHTML = "";
+    });
+
+    // Close modal on outside click
+    $("buyModal").addEventListener("click", (e) => {
+      if (e.target === $("buyModal")) closeModal();
+    });
+
+    // Initialize
+    if (checkLogin()) {
+      loadProducts();
+      loadOrders();
+    }
+  </script>
+</body>
+</html>

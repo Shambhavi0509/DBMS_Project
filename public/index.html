@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Intelligent Sales & Product Recommendation System</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="container">
+      <div class="brand">
+        <div class="brand-title">Intelligent Sales & Product Recommendation System</div>
+        <div class="brand-subtitle">DBMS Project • SQL-based recommendations (no AI/ML)</div>
+      </div>
+      <nav class="nav">
+        <a class="nav-link active" href="/">Home</a>
+        <a class="nav-link" href="/customer_login.html">Customer Portal</a>
+        <a class="nav-link" href="/salesperson_login.html">Sales Person</a>
+        <a class="nav-link" href="/products.html">Products</a>
+        <a class="nav-link" href="/reports.html">Reports</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="container">
+    <!-- Role Selection -->
+    <section class="card hero-card">
+      <h1 style="margin:0 0 8px;">Welcome!</h1>
+      <p class="muted" style="font-size:15px;">
+        This is a <b>College DBMS Project</b> demonstrating SQL concepts: 
+        3NF design, stored procedures, triggers, views, aggregate queries, and JOINs.
+      </p>
+      
+      <div class="role-grid">
+        <a href="/customer_login.html" class="role-card role-customer">
+          <div class="role-icon">🛒</div>
+          <div class="role-title">Customer Portal</div>
+          <div class="role-desc">
+            Login/register, search products, make purchases, view order history
+          </div>
+          <div class="role-features">
+            <span class="feature-tag">Search Products</span>
+            <span class="feature-tag">Buy Products</span>
+            <span class="feature-tag">Order History</span>
+          </div>
+        </a>
+
+        <a href="/salesperson_login.html" class="role-card role-salesperson">
+          <div class="role-icon">📊</div>
+          <div class="role-title">Sales Person Dashboard</div>
+          <div class="role-desc">
+            View customer statistics, daily reports, top products, recent sales
+          </div>
+          <div class="role-features">
+            <span class="feature-tag">Customer Reports</span>
+            <span class="feature-tag">Daily Sales</span>
+            <span class="feature-tag">Top Products</span>
+          </div>
+        </a>
+      </div>
+    </section>
+
+    <!-- DBMS Features Section -->
+    <section class="card">
+      <h2>DBMS Features Demonstrated</h2>
+      <p class="muted">Key database concepts implemented in this project (for viva preparation):</p>
+      
+      <div class="features-grid">
+        <div class="feature-box">
+          <div class="feature-title">📋 3NF Database Design</div>
+          <div class="feature-text">
+            Tables: Customer, Product, Sale, Sale_Item, Payment<br>
+            Proper normalization with no redundancy
+          </div>
+        </div>
+        
+        <div class="feature-box">
+          <div class="feature-title">🔑 Primary & Foreign Keys</div>
+          <div class="feature-text">
+            Auto-increment PKs, FK constraints<br>
+            Referential integrity maintained
+          </div>
+        </div>
+        
+        <div class="feature-box">
+          <div class="feature-title">⚡ Stored Procedure</div>
+          <div class="feature-text">
+            <code>make_sale()</code> procedure<br>
+            ACID transaction with COMMIT/ROLLBACK
+          </div>
+        </div>
+        
+        <div class="feature-box">
+          <div class="feature-title">🎯 Trigger</div>
+          <div class="feature-text">
+            AFTER INSERT on Sale_Item<br>
+            Auto-updates product stock
+          </div>
+        </div>
+        
+        <div class="feature-box">
+          <div class="feature-title">👁️ VIEW</div>
+          <div class="feature-text">
+            <code>daily_sales_report</code> view<br>
+            Simplifies complex reporting queries
+          </div>
+        </div>
+        
+        <div class="feature-box">
+          <div class="feature-title">📊 Aggregate Queries</div>
+          <div class="feature-text">
+            SUM, COUNT, AVG, GROUP BY<br>
+            Customer & product analytics
+          </div>
+        </div>
+        
+        <div class="feature-box">
+          <div class="feature-title">🔗 JOINs</div>
+          <div class="feature-text">
+            INNER JOIN, LEFT JOIN<br>
+            Multi-table data retrieval
+          </div>
+        </div>
+        
+        <div class="feature-box">
+          <div class="feature-title">🔍 SQL Search</div>
+          <div class="feature-text">
+            LIKE-based keyword matching<br>
+            Relevance scoring (not AI)
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Quick Links -->
+    <section class="card">
+      <h2>Quick Links</h2>
+      <div class="quick-links">
+        <a href="/products.html" class="quick-link">View All Products</a>
+        <a href="/reports.html" class="quick-link">Sales Reports</a>
+        <a href="/sale.html" class="quick-link">Manual Sale Entry</a>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="container muted">
+      Built with HTML/CSS/JS + Node.js/Express + MySQL (mysql2)<br>
+      Focus: DBMS concepts for college practical exam
+    </div>
+  </footer>
+
+  <style>
+    .hero-card {
+      text-align: center;
+      padding: 24px;
+    }
+    .role-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 16px;
+      margin-top: 20px;
+    }
+    @media (max-width: 700px) {
+      .role-grid { grid-template-columns: 1fr; }
+    }
+    .role-card {
+      display: block;
+      border: 2px solid var(--border);
+      border-radius: 16px;
+      padding: 24px;
+      text-decoration: none;
+      color: var(--text);
+      transition: all 0.2s;
+    }
+    .role-card:hover {
+      transform: translateY(-2px);
+    }
+    .role-customer {
+      background: linear-gradient(135deg, rgba(34, 197, 94, 0.1), rgba(34, 197, 94, 0.02));
+      border-color: rgba(34, 197, 94, 0.3);
+    }
+    .role-customer:hover {
+      border-color: rgba(34, 197, 94, 0.6);
+      box-shadow: 0 8px 32px rgba(34, 197, 94, 0.15);
+    }
+    .role-salesperson {
+      background: linear-gradient(135deg, rgba(110, 168, 255, 0.1), rgba(110, 168, 255, 0.02));
+      border-color: rgba(110, 168, 255, 0.3);
+    }
+    .role-salesperson:hover {
+      border-color: rgba(110, 168, 255, 0.6);
+      box-shadow: 0 8px 32px rgba(110, 168, 255, 0.15);
+    }
+    .role-icon {
+      font-size: 48px;
+      margin-bottom: 12px;
+    }
+    .role-title {
+      font-size: 20px;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+    .role-desc {
+      font-size: 14px;
+      color: var(--muted);
+      margin-bottom: 12px;
+    }
+    .role-features {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      justify-content: center;
+    }
+    .feature-tag {
+      font-size: 11px;
+      padding: 4px 8px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.08);
+      border: 1px solid var(--border);
+    }
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+      margin-top: 16px;
+    }
+    @media (max-width: 900px) {
+      .features-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+    @media (max-width: 500px) {
+      .features-grid { grid-template-columns: 1fr; }
+    }
+    .feature-box {
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 14px;
+      background: rgba(10, 16, 33, 0.35);
+    }
+    .feature-title {
+      font-weight: 700;
+      font-size: 13px;
+      margin-bottom: 6px;
+    }
+    .feature-text {
+      font-size: 12px;
+      color: var(--muted);
+      line-height: 1.4;
+    }
+    .feature-text code {
+      background: rgba(110, 168, 255, 0.15);
+      padding: 2px 5px;
+      border-radius: 4px;
+      font-size: 11px;
+    }
+    .quick-links {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    .quick-link {
+      padding: 10px 16px;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      text-decoration: none;
+      color: var(--muted);
+      font-size: 13px;
+    }
+    .quick-link:hover {
+      border-color: rgba(110, 168, 255, 0.5);
+      color: var(--text);
+      background: rgba(110, 168, 255, 0.1);
+    }
+  </style>
+</body>
+</html>

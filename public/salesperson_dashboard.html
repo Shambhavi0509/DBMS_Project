@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sales Person Dashboard • Intelligent Sales System</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="container">
+      <div class="brand">
+        <div class="brand-title">Sales Person Dashboard</div>
+        <div class="brand-subtitle">View reports and customer statistics</div>
+      </div>
+      <nav class="nav">
+        <a class="nav-link" href="/">Home</a>
+        <a class="nav-link" href="/customer_login.html">Customer Portal</a>
+        <a class="nav-link active" href="/salesperson_dashboard.html">Sales Person</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="container">
+    <!-- Summary Stats -->
+    <section class="card">
+      <h2>Dashboard Summary</h2>
+      <p class="muted">
+        <b>DBMS Note:</b> These stats use aggregate functions (COUNT, SUM, AVG) across multiple tables.
+      </p>
+      <div id="summaryStats" class="stats-grid">
+        <div class="stat-box">
+          <div class="stat-value" id="totalSales">-</div>
+          <div class="stat-label">Total Sales</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-value" id="totalRevenue">-</div>
+          <div class="stat-label">Total Revenue</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-value" id="totalCustomers">-</div>
+          <div class="stat-label">Customers Registered</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-value" id="totalCustomersPurchased">-</div>
+          <div class="stat-label">Customers Who Purchased</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-value" id="todayRevenue">-</div>
+          <div class="stat-label">Today's Revenue</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Tabs for different reports -->
+    <div class="tabs">
+      <button class="tab active" data-tab="customers">Customer Report</button>
+      <button class="tab" data-tab="daily">Daily Sales</button>
+      <button class="tab" data-tab="top-customers">Top Customers</button>
+      <button class="tab" data-tab="top-products">Top Products</button>
+      <button class="tab" data-tab="revenue-by-sp">Revenue by Salesperson</button>
+      <button class="tab" data-tab="recent">Recent Sales</button>
+    </div>
+
+    <!-- Customer Report Tab -->
+    <section class="card tab-content" id="tab-customers">
+      <h2>Customer Purchase Report</h2>
+      <p class="muted">
+        <b>DBMS Note:</b> Uses LEFT JOIN (Customer → Sale → Sale_Item) to include customers with no purchases.
+        Demonstrates GROUP BY, COUNT, SUM, COALESCE for NULL handling.
+      </p>
+      <div class="table-wrap">
+        <table class="table" id="customersTable">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Name</th>
+              <th>Phone</th>
+              <th>Email</th>
+              <th>Orders</th>
+              <th>Items</th>
+              <th>Total Spent</th>
+              <th>Last Purchase</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Daily Sales Tab -->
+    <section class="card tab-content" id="tab-daily" style="display:none;">
+      <h2>Daily Sales Report</h2>
+      <p class="muted">
+        <b>DBMS Note:</b> Uses DATE() function and GROUP BY to aggregate sales by day.
+        This data comes from the daily_sales_report VIEW.
+      </p>
+      <div class="table-wrap">
+        <table class="table" id="dailyTable">
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Orders</th>
+              <th>Items Sold</th>
+              <th>Total Amount</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Revenue by Salesperson Tab -->
+    <section class="card tab-content" id="tab-revenue-by-sp" style="display:none;">
+      <h2>Revenue by Salesperson</h2>
+      <p class="muted">
+        <b>DBMS Note:</b> GROUP BY salesperson_id, SUM(total_amount). JOIN Salesperson for names.
+      </p>
+      <div class="table-wrap">
+        <table class="table" id="revenueBySpTable">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Name</th>
+              <th>Email</th>
+              <th>Total Sales</th>
+              <th>Total Revenue</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Top Customers Tab -->
+    <section class="card tab-content" id="tab-top-customers" style="display:none;">
+      <h2>Top Customers by Spending</h2>
+      <p class="muted">
+        <b>DBMS Note:</b> INNER JOIN ensures only customers with purchases are shown.
+        ORDER BY total_amount_spent DESC ranks customers.
+      </p>
+      <div class="table-wrap">
+        <table class="table" id="topCustomersTable">
+          <thead>
+            <tr>
+              <th>Rank</th>
+              <th>Name</th>
+              <th>Phone</th>
+              <th>Orders</th>
+              <th>Items</th>
+              <th>Total Spent</th>
+              <th>Avg Order Value</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Top Products Tab -->
+    <section class="card tab-content" id="tab-top-products" style="display:none;">
+      <h2>Top Selling Products</h2>
+      <p class="muted">
+        <b>DBMS Note:</b> Aggregate query with SUM(quantity) and GROUP BY product_id.
+        Shows which products generate most revenue.
+      </p>
+      <div class="table-wrap">
+        <table class="table" id="topProductsTable">
+          <thead>
+            <tr>
+              <th>Rank</th>
+              <th>Product</th>
+              <th>Category</th>
+              <th>Qty Sold</th>
+              <th>Revenue</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Recent Sales Tab -->
+    <section class="card tab-content" id="tab-recent" style="display:none;">
+      <h2>Recent Sales</h2>
+      <p class="muted">
+        <b>DBMS Note:</b> Multi-table JOIN (Sale → Customer → Payment → Sale_Item → Product).
+        GROUP_CONCAT aggregates items into a single string.
+      </p>
+      <div class="table-wrap">
+        <table class="table" id="recentTable">
+          <thead>
+            <tr>
+              <th>Sale ID</th>
+              <th>Date</th>
+              <th>Customer</th>
+              <th>Items</th>
+              <th>Amount</th>
+              <th>Payment</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <style>
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+      margin-top: 12px;
+    }
+    @media (max-width: 800px) {
+      .stats-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+    .stat-box {
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 16px;
+      text-align: center;
+      background: rgba(110, 168, 255, 0.05);
+    }
+    .stat-value {
+      font-size: 24px;
+      font-weight: 700;
+      color: var(--accent);
+    }
+    .stat-label {
+      font-size: 12px;
+      color: var(--muted);
+      margin-top: 4px;
+    }
+    .tabs {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin: 16px 0 0;
+    }
+    .tab {
+      padding: 10px 16px;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      background: transparent;
+      color: var(--muted);
+      cursor: pointer;
+      font-size: 13px;
+    }
+    .tab:hover {
+      border-color: rgba(110, 168, 255, 0.5);
+      color: var(--text);
+    }
+    .tab.active {
+      background: rgba(110, 168, 255, 0.18);
+      border-color: rgba(110, 168, 255, 0.5);
+      color: var(--text);
+    }
+    .tab-content {
+      margin-top: 0;
+      border-top-left-radius: 0;
+    }
+  </style>
+
+  <script>
+    const $ = (id) => document.getElementById(id);
+
+    function escapeHtml(str) {
+      return String(str || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    }
+
+    function formatDate(dateStr) {
+      if (!dateStr) return "-";
+      return new Date(dateStr).toLocaleDateString();
+    }
+
+    function formatCurrency(amount) {
+      return "₹" + Number(amount || 0).toFixed(2);
+    }
+
+    // Tab switching
+    document.querySelectorAll(".tab").forEach(tab => {
+      tab.addEventListener("click", () => {
+        document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
+        document.querySelectorAll(".tab-content").forEach(c => c.style.display = "none");
+        tab.classList.add("active");
+        $(`tab-${tab.dataset.tab}`).style.display = "block";
+      });
+    });
+
+    async function loadSummary() {
+      try {
+        const res = await fetch("/api/salesperson/summary");
+        const data = await res.json();
+        $("totalSales").textContent = data.total_sales;
+        $("totalRevenue").textContent = formatCurrency(data.total_revenue);
+        $("totalCustomers").textContent = data.total_customers;
+        $("totalCustomersPurchased").textContent = data.total_customers_purchased != null ? data.total_customers_purchased : "-";
+        $("todayRevenue").textContent = formatCurrency(data.today_revenue);
+      } catch (err) {
+        console.error("Failed to load summary:", err);
+      }
+    }
+
+    async function loadCustomers() {
+      try {
+        const res = await fetch("/api/salesperson/customers");
+        const rows = await res.json();
+        $("customersTable").querySelector("tbody").innerHTML = rows.map(r => `
+          <tr>
+            <td>${r.customer_id}</td>
+            <td>${escapeHtml(r.name)}</td>
+            <td>${escapeHtml(r.phone)}</td>
+            <td>${escapeHtml(r.email)}</td>
+            <td>${r.total_orders}</td>
+            <td>${r.total_items_purchased}</td>
+            <td class="ok">${formatCurrency(r.total_amount_spent)}</td>
+            <td>${formatDate(r.last_purchase_date)}</td>
+          </tr>
+        `).join("");
+      } catch (err) {
+        console.error("Failed to load customers:", err);
+      }
+    }
+
+    async function loadDailySales() {
+      try {
+        const res = await fetch("/api/salesperson/daily-sales");
+        const rows = await res.json();
+        $("dailyTable").querySelector("tbody").innerHTML = rows.map(r => `
+          <tr>
+            <td>${formatDate(r.sale_date)}</td>
+            <td>${r.total_orders}</td>
+            <td>${r.total_items}</td>
+            <td class="ok">${formatCurrency(r.total_sales_amount)}</td>
+          </tr>
+        `).join("");
+      } catch (err) {
+        console.error("Failed to load daily sales:", err);
+      }
+    }
+
+    async function loadTopCustomers() {
+      try {
+        const res = await fetch("/api/salesperson/top-customers");
+        const rows = await res.json();
+        $("topCustomersTable").querySelector("tbody").innerHTML = rows.map((r, i) => `
+          <tr>
+            <td><strong>#${i + 1}</strong></td>
+            <td>${escapeHtml(r.name)}</td>
+            <td>${escapeHtml(r.phone)}</td>
+            <td>${r.total_orders}</td>
+            <td>${r.total_items_purchased}</td>
+            <td class="ok">${formatCurrency(r.total_amount_spent)}</td>
+            <td>${formatCurrency(r.avg_order_value)}</td>
+          </tr>
+        `).join("");
+      } catch (err) {
+        console.error("Failed to load top customers:", err);
+      }
+    }
+
+    async function loadTopProducts() {
+      try {
+        const res = await fetch("/api/reports/top-products");
+        const rows = await res.json();
+        $("topProductsTable").querySelector("tbody").innerHTML = rows.map((r, i) => `
+          <tr>
+            <td><strong>#${i + 1}</strong></td>
+            <td>${escapeHtml(r.name)}</td>
+            <td>${escapeHtml(r.category)}</td>
+            <td>${r.total_quantity_sold}</td>
+            <td class="ok">${formatCurrency(r.total_revenue)}</td>
+          </tr>
+        `).join("");
+      } catch (err) {
+        console.error("Failed to load top products:", err);
+      }
+    }
+
+    async function loadRevenueBySp() {
+      try {
+        const res = await fetch("/api/salesperson/revenue-by-salesperson");
+        const rows = await res.json();
+        $("revenueBySpTable").querySelector("tbody").innerHTML = rows.map(r => `
+          <tr>
+            <td>${r.salesperson_id}</td>
+            <td>${escapeHtml(r.salesperson_name)}</td>
+            <td>${escapeHtml(r.email)}</td>
+            <td>${r.total_sales}</td>
+            <td class="ok">${formatCurrency(r.total_revenue)}</td>
+          </tr>
+        `).join("");
+      } catch (err) {
+        console.error("Failed to load revenue by salesperson:", err);
+        $("revenueBySpTable").querySelector("tbody").innerHTML = "<tr><td colspan='5' class='muted'>Run db_migration_auth.sql to enable Salesperson table.</td></tr>";
+      }
+    }
+
+    async function loadRecentSales() {
+      try {
+        const res = await fetch("/api/salesperson/recent-sales");
+        const rows = await res.json();
+        $("recentTable").querySelector("tbody").innerHTML = rows.map(r => `
+          <tr>
+            <td>#${r.sale_id}</td>
+            <td>${formatDate(r.sale_date)}</td>
+            <td>${escapeHtml(r.customer_name)}<br><small class="muted">${escapeHtml(r.customer_phone)}</small></td>
+            <td><small>${escapeHtml(r.items)}</small></td>
+            <td class="ok">${formatCurrency(r.total_amount)}</td>
+            <td><span class="pill">${r.payment_mode}</span></td>
+          </tr>
+        `).join("");
+      } catch (err) {
+        console.error("Failed to load recent sales:", err);
+      }
+    }
+
+    // Load all data
+    loadSummary();
+    loadCustomers();
+    loadDailySales();
+    loadTopCustomers();
+    loadTopProducts();
+    loadRevenueBySp();
+    loadRecentSales();
+  </script>
+</body>
+</html>

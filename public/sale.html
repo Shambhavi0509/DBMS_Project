@@ -1,0 +1,198 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Make Sale • Intelligent Sales System</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="container">
+        <div class="brand">
+          <div class="brand-title">Make a Sale</div>
+          <div class="brand-subtitle">Calls stored procedure <code>make_sale</code></div>
+        </div>
+        <nav class="nav">
+          <a class="nav-link" href="/">Home</a>
+          <a class="nav-link" href="/products.html">Products</a>
+          <a class="nav-link active" href="/sale.html">Make Sale</a>
+          <a class="nav-link" href="/reports.html">Reports</a>
+        </nav>
+      </div>
+    </header>
+
+    <main class="container">
+      <section class="card">
+        <h2>Sale Entry</h2>
+        <p class="muted">
+          DBMS note: This action uses a <b>stored procedure</b> to do multiple operations inside a
+          <b>single transaction</b> (atomicity). Stock update is enforced at DB-level (procedure + trigger rule).
+        </p>
+
+        <form id="saleForm" class="form">
+          <div class="form-grid">
+            <label class="field">
+              <span>Customer</span>
+              <select id="customer" class="input" required></select>
+            </label>
+
+            <label class="field">
+              <span>Product</span>
+              <select id="product" class="input" required></select>
+            </label>
+
+            <label class="field">
+              <span>Quantity</span>
+              <input id="quantity" class="input" type="number" min="1" value="1" required />
+            </label>
+
+            <label class="field">
+              <span>Payment Mode</span>
+              <select id="mode" class="input">
+                <option value="CASH">CASH</option>
+                <option value="UPI">UPI</option>
+                <option value="CARD">CARD</option>
+              </select>
+            </label>
+          </div>
+
+          <div class="row">
+            <button class="btn" type="submit">Complete Sale</button>
+            <button id="resetBtn" class="btn btn-secondary" type="button">Reset</button>
+          </div>
+        </form>
+
+        <div id="msg" class="msg"></div>
+      </section>
+
+      <section class="card">
+        <h2>Quick Stock Preview</h2>
+        <p class="muted">After successful sale, stock reduces automatically.</p>
+        <div class="table-wrap">
+          <table class="table" id="miniTable">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Name</th>
+                <th>Price</th>
+                <th>Stock</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+
+    <script>
+      const $ = (id) => document.getElementById(id);
+      let products = [];
+
+      function escapeHtml(str) {
+        return String(str)
+          .replaceAll("&", "&amp;")
+          .replaceAll("<", "&lt;")
+          .replaceAll(">", "&gt;")
+          .replaceAll('"', "&quot;")
+          .replaceAll("'", "&#039;");
+      }
+
+      function setMsg(type, text) {
+        const el = $("msg");
+        el.className = `msg ${type}`;
+        el.textContent = text;
+      }
+
+      async function loadCustomers() {
+        console.log("Fetching /api/customers...");
+        const res = await fetch("/api/customers");
+        const rows = await res.json();
+        console.log("Customers received:", rows.length);
+        $("customer").innerHTML = rows
+          .map((c) => `<option value="${c.customer_id}">${escapeHtml(c.name)} (ID: ${c.customer_id})</option>`)
+          .join("");
+      }
+
+      async function loadProducts() {
+        console.log("Fetching /api/products...");
+        const res = await fetch("/api/products");
+        products = await res.json();
+        console.log("Products received:", products.length);
+
+        $("product").innerHTML = products
+          .map((p) => {
+            const disabled = Number(p.stock) <= 0 ? "disabled" : "";
+            return `<option ${disabled} value="${p.product_id}">
+              ${escapeHtml(p.name)} • ₹${Number(p.price).toFixed(2)} • Stock: ${p.stock}
+            </option>`;
+          })
+          .join("");
+
+        renderMiniTable();
+      }
+
+      function renderMiniTable() {
+        const top = products
+          .slice()
+          .sort((a, b) => Number(b.stock) - Number(a.stock))
+          .slice(0, 8);
+
+        $("miniTable").querySelector("tbody").innerHTML = top
+          .map(
+            (p) => `
+          <tr>
+            <td>${p.product_id}</td>
+            <td>${escapeHtml(p.name)}</td>
+            <td>₹${Number(p.price).toFixed(2)}</td>
+            <td class="${Number(p.stock) > 0 ? "ok" : "bad"}">${p.stock}</td>
+          </tr>
+        `
+          )
+          .join("");
+      }
+
+      $("saleForm").addEventListener("submit", async (e) => {
+        e.preventDefault();
+        setMsg("", "");
+
+        const salesperson = sessionStorage.getItem("salesperson");
+        const salesperson_id = salesperson ? JSON.parse(salesperson).salesperson_id : 0;
+        const payload = {
+          customer_id: Number($("customer").value),
+          product_id: Number($("product").value),
+          quantity: Number($("quantity").value),
+          payment_mode: $("mode").value,
+          salesperson_id,
+        };
+
+        try {
+          const res = await fetch("/api/sale", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+          });
+          const data = await res.json();
+
+          if (!res.ok) throw new Error(data.details || data.error || "Sale failed");
+
+          setMsg("ok", `Sale Success! Sale ID: ${data.sale_id} • Total: ₹${Number(data.total_amount).toFixed(2)} • Mode: ${data.payment_mode}`);
+          await loadProducts(); // refresh stock view
+        } catch (err) {
+          setMsg("bad", err.message);
+        }
+      });
+
+      $("resetBtn").addEventListener("click", () => {
+        $("quantity").value = 1;
+        $("mode").value = "CASH";
+        setMsg("", "");
+      });
+
+      // Initial load
+      loadCustomers();
+      loadProducts();
+    </script>
+  </body>
+</html>
+

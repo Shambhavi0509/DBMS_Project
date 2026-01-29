@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sales Person Login • Intelligent Sales System</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="container">
+      <div class="brand">
+        <div class="brand-title">Sales Person Login</div>
+        <div class="brand-subtitle">Login to access reports (no password)</div>
+      </div>
+      <nav class="nav">
+        <a class="nav-link" href="/">Home</a>
+        <a class="nav-link" href="/customer_login.html">Customer Login</a>
+        <a class="nav-link active" href="/salesperson_login.html">Sales Person Login</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="container">
+    <section class="card">
+      <h2>Sales Person Login</h2>
+      <p class="muted">
+        <b>DBMS Note:</b> Academic project — login by email or Employee ID (salesperson_id). No passwords.
+      </p>
+
+      <div class="tabs-inline">
+        <button type="button" class="tab-btn active" data-tab="login">Login</button>
+        <button type="button" class="tab-btn" data-tab="signup">Sign up</button>
+      </div>
+
+      <form id="loginForm" class="auth-form">
+        <div class="form-grid">
+          <label class="field">
+            <span>Email</span>
+            <input id="loginEmail" class="input" type="email" placeholder="sales@example.com">
+          </label>
+          <label class="field">
+            <span>Employee ID (or use email)</span>
+            <input id="loginEmployeeId" class="input" type="number" min="1" placeholder="Salesperson ID">
+          </label>
+        </div>
+        <p class="muted" style="font-size:12px; margin-top:4px;">Enter either email or Employee ID to login.</p>
+        <div class="row">
+          <button class="btn" type="submit">Login</button>
+        </div>
+      </form>
+
+      <form id="signupForm" class="auth-form" style="display:none;">
+        <div class="form-grid">
+          <label class="field" style="grid-column: span 2;">
+            <span>Full Name *</span>
+            <input id="signupName" class="input" type="text" placeholder="Your name" required minlength="2">
+          </label>
+          <label class="field" style="grid-column: span 2;">
+            <span>Email *</span>
+            <input id="signupEmail" class="input" type="email" placeholder="sales@example.com" required>
+          </label>
+        </div>
+        <div class="row">
+          <button class="btn" type="submit">Sign up</button>
+        </div>
+      </form>
+
+      <div id="msg" class="msg"></div>
+    </section>
+  </main>
+
+  <style>
+    .tabs-inline { display: flex; gap: 8px; margin-bottom: 16px; }
+    .tab-btn { padding: 8px 16px; border: 1px solid var(--border); border-radius: 10px; background: transparent; color: var(--muted); cursor: pointer; }
+    .tab-btn.active { background: rgba(110, 168, 255, 0.2); border-color: rgba(110, 168, 255, 0.5); color: var(--text); }
+    .auth-form { margin-top: 0; }
+  </style>
+
+  <script>
+    const $ = (id) => document.getElementById(id);
+
+    function setMsg(type, text) {
+      const el = $("msg");
+      el.className = `msg ${type}`;
+      el.innerHTML = text;
+    }
+
+    document.querySelectorAll(".tab-btn").forEach(btn => {
+      btn.addEventListener("click", () => {
+        document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
+        btn.classList.add("active");
+        $("loginForm").style.display = btn.dataset.tab === "login" ? "block" : "none";
+        $("signupForm").style.display = btn.dataset.tab === "signup" ? "block" : "none";
+        setMsg("", "");
+      });
+    });
+
+    $("loginForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const email = $("loginEmail").value.trim().toLowerCase();
+      const employee_id = $("loginEmployeeId").value.trim();
+      const salesperson_id = employee_id ? parseInt(employee_id, 10) : null;
+      if (!email && !salesperson_id) {
+        setMsg("bad", "Enter email or Employee ID to login.");
+        return;
+      }
+      setMsg("", "Logging in...");
+      try {
+        const res = await fetch("/api/salesperson/login", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email: email || undefined, salesperson_id: salesperson_id || undefined }),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || data.details || "Login failed");
+        sessionStorage.setItem("salesperson", JSON.stringify(data.salesperson));
+        setMsg("ok", `Welcome, ${data.salesperson.name}!<br><a href="/salesperson_dashboard.html" class="btn" style="display:inline-block; margin-top:8px;">Go to Dashboard →</a>`);
+      } catch (err) {
+        setMsg("bad", err.message);
+      }
+    });
+
+    $("signupForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      setMsg("", "Creating account...");
+      try {
+        const res = await fetch("/api/salesperson/signup", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            name: $("signupName").value.trim(),
+            email: $("signupEmail").value.trim().toLowerCase(),
+          }),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || data.details || "Signup failed");
+        sessionStorage.setItem("salesperson", JSON.stringify(data.salesperson));
+        setMsg("ok", `Account created! Welcome, ${data.salesperson.name}. Employee ID: ${data.salesperson.salesperson_id}<br><a href="/salesperson_dashboard.html" class="btn" style="display:inline-block; margin-top:8px;">Go to Dashboard →</a>`);
+      } catch (err) {
+        setMsg("bad", err.message);
+      }
+    });
+
+    const existing = sessionStorage.getItem("salesperson");
+    if (existing) {
+      const sp = JSON.parse(existing);
+      setMsg("ok", `Already logged in as <b>${sp.name}</b><br><a href="/salesperson_dashboard.html" class="btn" style="display:inline-block; margin-top:8px;">Go to Dashboard →</a> <button onclick="sessionStorage.removeItem('salesperson'); location.reload();" class="btn btn-secondary" style="margin-left:8px;">Logout</button>`);
+    }
+  </script>
+</body>
+</html>

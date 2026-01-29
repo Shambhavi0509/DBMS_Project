@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Reports • Intelligent Sales System</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="container">
+        <div class="brand">
+          <div class="brand-title">Reports</div>
+          <div class="brand-subtitle">VIEW + Aggregate queries</div>
+        </div>
+        <nav class="nav">
+          <a class="nav-link" href="/">Home</a>
+          <a class="nav-link" href="/products.html">Products</a>
+          <a class="nav-link" href="/sale.html">Make Sale</a>
+          <a class="nav-link active" href="/reports.html">Reports</a>
+        </nav>
+      </div>
+    </header>
+
+    <main class="container">
+      <section class="card">
+        <h2>Daily Sales Report (VIEW)</h2>
+        <p class="muted">
+          DBMS note: <code>daily_sales_report</code> is a <b>VIEW</b> that groups sales by date and sums total amount.
+        </p>
+        <div class="table-wrap">
+          <table class="table" id="dailyTable">
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Total Sales Amount</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2>Top-Selling Products (Aggregate Query)</h2>
+        <p class="muted">
+          DBMS note: Uses <code>SUM(quantity)</code> and <code>GROUP BY</code> on <code>Sale_Item</code>.
+        </p>
+        <div class="table-wrap">
+          <table class="table" id="topTable">
+            <thead>
+              <tr>
+                <th>Product</th>
+                <th>Category</th>
+                <th>Total Quantity Sold</th>
+                <th>Total Revenue</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+
+    <script>
+      function escapeHtml(str) {
+        return String(str)
+          .replaceAll("&", "&amp;")
+          .replaceAll("<", "&lt;")
+          .replaceAll(">", "&gt;")
+          .replaceAll('"', "&quot;")
+          .replaceAll("'", "&#039;");
+      }
+
+      async function loadDaily() {
+        console.log("Fetching /api/reports/daily-sales...");
+        const res = await fetch("/api/reports/daily-sales");
+        const rows = await res.json();
+        console.log("Daily sales received:", rows.length);
+        document.querySelector("#dailyTable tbody").innerHTML = rows
+          .map(
+            (r) => `
+          <tr>
+            <td>${escapeHtml(r.sale_date)}</td>
+            <td>₹${Number(r.total_sales_amount).toFixed(2)}</td>
+          </tr>
+        `
+          )
+          .join("");
+      }
+
+      async function loadTop() {
+        console.log("Fetching /api/reports/top-products...");
+        const res = await fetch("/api/reports/top-products");
+        const rows = await res.json();
+        console.log("Top products received:", rows.length);
+        document.querySelector("#topTable tbody").innerHTML = rows
+          .map(
+            (r) => `
+          <tr>
+            <td>${escapeHtml(r.name)} (ID: ${r.product_id})</td>
+            <td>${escapeHtml(r.category)}</td>
+            <td>${r.total_quantity_sold}</td>
+            <td>₹${Number(r.total_revenue).toFixed(2)}</td>
+          </tr>
+        `
+          )
+          .join("");
+      }
+
+      loadDaily();
+      loadTop();
+    </script>
+  </body>
+</html>
+
