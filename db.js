@@ -38,11 +38,14 @@ async function testConnection() {
     console.log(`👤 User: ${DB_USER}`);
     conn.release();
   } catch (err) {
-    console.error("❌ DB CONNECTION FAILED:", err.message);
+    console.error("❌ DB CONNECTION FAILED:");
+    console.error("Error:", err.message);
+    console.error("Code:", err.code);
     console.error("\n💡 Troubleshooting tips:");
     console.error("   1. Check if MySQL is running");
     console.error("   2. Verify password in db.js");
     console.error("   3. Make sure database exists");
+    console.error("   4. Check if port", DB_PORT, "is correct");
   }
 }
 
